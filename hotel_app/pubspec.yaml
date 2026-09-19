@@ -1,0 +1,54 @@
+name: hotel_app
+description: >
+  Hotel management app (hybrid offline/online) - Flutter front-end for the
+  Node + Express + MySQL hotel-backend. Works fully offline against a local
+  SQLite cache; a manual "Sync Now" action pushes pending changes once the
+  device is back online.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Networking
+  dio: ^5.4.3+1
+
+  # Local (offline) database - raw SQLite, no code generation required
+  sqflite: ^2.3.3+1
+  sqflite_common_ffi: ^2.3.3
+  path: ^1.9.0
+
+  # Connectivity detection (Wi-Fi/mobile signal - paired with a real
+  # reachability ping in ConnectivityService, since a Wi-Fi network with no
+  # internet still reports "connected")
+  connectivity_plus: ^6.0.3
+
+  # Client-generated ids for offline-created records - this is what makes
+  # sync idempotent (see core/sync/sync_manager.dart)
+  uuid: ^4.4.0
+
+  # Secure on-device storage for the JWT access/refresh tokens
+  flutter_secure_storage: ^9.2.2
+
+  # State management - one ChangeNotifier provider per feature
+  provider: ^6.1.2
+
+  # Date / currency formatting
+  intl: ^0.19.0
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/

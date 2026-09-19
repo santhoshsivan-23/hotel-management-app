@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS food_order_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  uuid CHAR(36) NOT NULL UNIQUE,
+  food_order_id INT NOT NULL,
+  product_name VARCHAR(150) NOT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  price DECIMAL(10,2) NOT NULL DEFAULT 0,
+  modifiers VARCHAR(255),
+  notes VARCHAR(255),
+  FOREIGN KEY (food_order_id) REFERENCES food_orders(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

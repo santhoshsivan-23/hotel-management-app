@@ -1,0 +1,27 @@
+CREATE TABLE IF NOT EXISTS bookings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  uuid CHAR(36) NOT NULL UNIQUE,
+  booking_number VARCHAR(30) NOT NULL UNIQUE,
+  guest_id INT NOT NULL,
+  room_id INT NOT NULL,
+  check_in DATETIME NOT NULL,
+  check_out DATETIME NOT NULL,
+  adults INT NOT NULL DEFAULT 1,
+  children INT NOT NULL DEFAULT 0,
+  room_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+  nights INT NOT NULL DEFAULT 1,
+  room_total DECIMAL(10,2) NOT NULL DEFAULT 0,
+  discount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  grand_total DECIMAL(10,2) NOT NULL DEFAULT 0,
+  advance_paid DECIMAL(10,2) NOT NULL DEFAULT 0,
+  status ENUM('PENDING','CONFIRMED','CHECKED_IN','CHECKED_OUT','CANCELLED','NO_SHOW')
+    NOT NULL DEFAULT 'PENDING',
+  created_by_device VARCHAR(100),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (guest_id) REFERENCES guests(id),
+  FOREIGN KEY (room_id) REFERENCES rooms(id),
+  INDEX idx_bookings_room_dates (room_id, check_in, check_out),
+  INDEX idx_bookings_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

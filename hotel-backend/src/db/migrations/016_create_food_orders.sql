@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS food_orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  uuid CHAR(36) NOT NULL UNIQUE,
+  booking_id INT NOT NULL,
+  room_id INT NOT NULL,
+  guest_id INT NOT NULL,
+  status ENUM('NEW','ACCEPTED','PREPARING','READY','DELIVERED','COMPLETED','CANCELLED')
+    NOT NULL DEFAULT 'NEW',
+  total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  created_by_device VARCHAR(100),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (booking_id) REFERENCES bookings(id),
+  FOREIGN KEY (room_id) REFERENCES rooms(id),
+  FOREIGN KEY (guest_id) REFERENCES guests(id),
+  INDEX idx_food_orders_booking (booking_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

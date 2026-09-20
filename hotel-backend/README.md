@@ -25,13 +25,19 @@ npm install
 cp .env.example .env
 # edit .env with your DB credentials, JWT secrets, etc.
 
-npm run migrate   # creates the database (if missing) and all 20 tables
-npm run seed      # seeds roles, room types, amenities, taxes, service
-                   # types, payment methods, hotel settings, and one
-                   # default admin login
-
 npm start          # or: npm run dev (nodemon)
 ```
+
+> **Note:** Starting the backend with `npm start` or `npm run dev` **automatically**:
+> 1. Creates the database (e.g. `hotel_db`) if it doesn't already exist.
+> 2. Runs all 20 migrations (creating all tables using `CREATE TABLE IF NOT EXISTS`).
+> 3. Runs all 8 seeds (safely inserting default roles, admin user, room types, etc.).
+>
+> You can also still run migrations or seeds manually if needed:
+> ```bash
+> npm run migrate   # creates database and all 20 tables manually
+> npm run seed      # seeds default data manually
+> ```
 
 The server starts on `PORT` (default `5000`) and logs to the console.
 

@@ -9,6 +9,12 @@ hotel-management-app/
 └── hotel_app/       Flutter frontend (offline-first, syncs to hotel-backend)
 ```
 
+## 📖 Key Documentation Guides
+
+- **[Getting Started & Operations Guide](file:///d:/Z-React/POS-Flutter/hotel-management-app/Getting_Started_Guide.md)**: Complete step-by-step setup from zero to running the app, initial admin configuration, room setup, staff roles, and daily operations.
+- **[Customer Journey & Application Workflow](file:///d:/Z-React/POS-Flutter/hotel-management-app/Workflow.md)**: Detailed explanation of how the customer journey works (Booking $\rightarrow$ Check-In $\rightarrow$ Food & Services $\rightarrow$ Housekeeping $\rightarrow$ Check-Out & Invoicing) and the behind-the-scenes offline sync.
+
+
 ## Quick start
 
 ```bash

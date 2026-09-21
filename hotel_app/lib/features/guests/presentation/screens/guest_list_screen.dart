@@ -89,9 +89,14 @@ class _GuestListViewState extends State<_GuestListView> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AddEditGuestScreen()),
-        ),
+        onPressed: () async {
+          final created = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const AddEditGuestScreen()),
+          );
+          if (created == true && context.mounted) {
+            context.read<GuestProvider>().load();
+          }
+        },
         child: const Icon(Icons.add),
       ),
     );

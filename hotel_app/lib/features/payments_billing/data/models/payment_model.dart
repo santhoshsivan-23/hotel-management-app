@@ -25,12 +25,18 @@ class PaymentModel {
 
   bool get isPending => syncStatus == 'PENDING' || syncStatus == 'FAILED';
 
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
   factory PaymentModel.fromMap(Map<String, dynamic> map) {
     return PaymentModel(
       uuid: map['uuid'] as String,
       serverId: map['server_id'] as int?,
       bookingUuid: map['booking_uuid'] as String,
-      amount: (map['amount'] as num).toDouble(),
+      amount: _toDouble(map['amount']),
       method: map['method'] as String,
       referenceNo: map['reference_no'] as String?,
       paidAt: DateTime.parse(map['paid_at'] as String),

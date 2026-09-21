@@ -48,6 +48,8 @@ class _NewReservationScreenState extends State<NewReservationScreen> {
         return _state.pricing != null;
       case 4:
         return true;
+      case 5:
+        return true;
       default:
         return false;
     }
@@ -145,7 +147,13 @@ class _NewReservationScreenState extends State<NewReservationScreen> {
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 StayDetailsStep(state: _state, onChanged: _onChanged),
-                RoomSearchStep(state: _state, onChanged: _onChanged),
+                RoomSearchStep(
+                  key: ValueKey(
+                    '${_state.checkIn?.millisecondsSinceEpoch}_${_state.checkOut?.millisecondsSinceEpoch}_${_state.adults}_${_state.children}',
+                  ),
+                  state: _state,
+                  onChanged: _onChanged,
+                ),
                 GuestStep(state: _state, onChanged: _onChanged),
                 PricingStep(
                   state: _state,

@@ -37,6 +37,12 @@ class ServiceRequestModel {
 
   bool get isPending => syncStatus == 'PENDING' || syncStatus == 'FAILED';
 
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
   factory ServiceRequestModel.fromMap(Map<String, dynamic> map) {
     return ServiceRequestModel(
       uuid: map['uuid'] as String,
@@ -48,7 +54,7 @@ class ServiceRequestModel {
       serviceTypeId: map['service_type_id'] as int,
       serviceTypeName: map['service_type_name'] as String?,
       quantity: map['quantity'] as int,
-      amount: (map['amount'] as num).toDouble(),
+      amount: _toDouble(map['amount']),
       status: map['status'] as String,
       notes: map['notes'] as String?,
       syncStatus: map['sync_status'] as String? ?? 'PENDING',

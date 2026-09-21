@@ -31,13 +31,45 @@ class RoomRepository {
     int? capacity,
     int? roomTypeId,
   }) async {
-    final rows = await _dao.findAvailable(
-      checkInIso: checkIn.toUtc().toIso8601String(),
-      checkOutIso: checkOut.toUtc().toIso8601String(),
-      capacity: capacity,
-      roomTypeId: roomTypeId,
-    );
-    return rows.map(RoomModel.fromMap).toList();
+    // 1. Try to fetch available rooms from the backend when online
+    try {
+      final checkInDate = checkIn.toIso8601String().split('T').first;
+      final checkOutDate = checkOut.toIso8601String().split('T').first;
+      final response = await _apiClient.dio.get(
+        ApiEndpoints.roomsAvailable,
+        queryParameters: {
+          'check_in': checkInDate,
+          'check_out': checkOutDate,
+          if (capacity != null) 'capacity': capacity,
+          if (roomTypeId != null) 'room_type_id': roomTypeId,
+        },
+      );
+      final list = (response.data as List)
+          .map((m) => RoomModel.fromMap(Map<String, dynamic>.from(m as Map)))
+          .toList();
+      // Cache these rooms locally
+      if (list.isNotEmpty) {
+        await _database.upsertReferenceRows(
+          RoomsTable.tableName,
+          list.map((r) => r.toCacheMap()).toList(),
+          allowedColumns: RoomsTable.columns,
+        );
+      }
+      return list;
+    } catch (e) {
+      // 2. Fall back to local SQLite cache if offline or on network error
+      try {
+        final rows = await _dao.findAvailable(
+          checkInIso: checkIn.toUtc().toIso8601String(),
+          checkOutIso: checkOut.toUtc().toIso8601String(),
+          capacity: capacity,
+          roomTypeId: roomTypeId,
+        );
+        return rows.map(RoomModel.fromMap).toList();
+      } catch (_) {
+        return [];
+      }
+    }
   }
 
   /// Throws DioException if offline/failed - callers should surface a

@@ -12,6 +12,7 @@ const pool = mysql.createPool({
   connectionLimit: env.db.connectionLimit,
   queueLimit: 0,
   dateStrings: true,
+  decimalNumbers: true,
 });
 
 pool

@@ -78,9 +78,16 @@ class RoomDao {
       ''',
       [checkOutIso, checkInIso],
     );
-    final bookedRoomIds = overlapping.map((r) => r['room_id'] as int).toSet();
+    final bookedRoomIds = overlapping.map((r) {
+      final rid = r['room_id'];
+      return (rid is num) ? rid.toInt() : int.tryParse(rid?.toString() ?? '');
+    }).whereType<int>().toSet();
 
-    return candidateRooms.where((room) => !bookedRoomIds.contains(room['id'])).toList();
+    return candidateRooms.where((room) {
+      final rid = room['id'];
+      final idInt = (rid is num) ? rid.toInt() : int.tryParse(rid?.toString() ?? '');
+      return idInt != null && !bookedRoomIds.contains(idInt);
+    }).toList();
   }
 
   Future<void> replaceAll(List<Map<String, dynamic>> rows) => _db.upsertReferenceRows(RoomsTable.tableName, rows);

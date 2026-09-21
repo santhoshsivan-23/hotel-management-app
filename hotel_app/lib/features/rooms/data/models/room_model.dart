@@ -24,17 +24,29 @@ class RoomModel {
   final double price;
   final String status;
 
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
+  static int _toInt(dynamic value, [int defaultValue = 0]) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
+  }
+
   factory RoomModel.fromMap(Map<String, dynamic> map) {
     return RoomModel(
-      id: map['id'] as int,
-      uuid: map['uuid'] as String?,
-      roomNumber: map['room_number'] as String,
-      roomTypeId: map['room_type_id'] as int,
-      roomTypeName: map['room_type_name'] as String?,
-      floor: map['floor'] as String?,
-      capacity: map['capacity'] as int,
-      price: (map['price'] as num).toDouble(),
-      status: map['status'] as String,
+      id: _toInt(map['id']),
+      uuid: map['uuid']?.toString(),
+      roomNumber: map['room_number']?.toString() ?? '',
+      roomTypeId: _toInt(map['room_type_id']),
+      roomTypeName: map['room_type_name']?.toString(),
+      floor: map['floor']?.toString(),
+      capacity: _toInt(map['capacity'], 1),
+      price: _toDouble(map['price']),
+      status: map['status']?.toString() ?? 'AVAILABLE',
     );
   }
 

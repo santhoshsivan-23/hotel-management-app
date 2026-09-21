@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/config/api_endpoints.dart';
+import '../../../../core/db/app_database.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/utils/validators.dart';
-import '../../providers/room_provider.dart';
+import '../../data/repositories/room_repository.dart';
 
 class AddEditRoomScreen extends StatefulWidget {
   const AddEditRoomScreen({super.key});
@@ -49,27 +50,37 @@ class _AddEditRoomScreenState extends State<AddEditRoomScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || _selectedRoomTypeId == null) return;
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedRoomTypeId == null) {
+      setState(() => _error = 'Please select a Room Type. If none are listed, ensure room types are configured in Settings.');
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
     });
 
-    final error = await context.read<RoomProvider>().createRoom(
-          roomNumber: _roomNumber.text.trim(),
-          roomTypeId: _selectedRoomTypeId!,
-          floor: _floor.text.trim().isEmpty ? null : _floor.text.trim(),
-          capacity: int.parse(_capacity.text.trim()),
-          price: double.parse(_price.text.trim()),
-        );
+    try {
+      final repository = RoomRepository(
+        database: context.read<AppDatabase>(),
+        apiClient: context.read<ApiClient>(),
+      );
 
-    if (!mounted) return;
-    if (error == null) {
-      Navigator.of(context).pop();
-    } else {
+      await repository.create(
+        roomNumber: _roomNumber.text.trim(),
+        roomTypeId: _selectedRoomTypeId!,
+        floor: _floor.text.trim().isEmpty ? null : _floor.text.trim(),
+        capacity: int.parse(_capacity.text.trim()),
+        price: double.parse(_price.text.trim()),
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
         _saving = false;
-        _error = error;
+        _error = 'Could not create room: $e';
       });
     }
   }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/db/app_database.dart';
 import '../../../../core/utils/validators.dart';
 import '../../data/models/guest_model.dart';
-import '../../providers/guest_provider.dart';
+import '../../data/repositories/guest_repository.dart';
 
 class AddEditGuestScreen extends StatefulWidget {
   const AddEditGuestScreen({super.key, this.existing});
@@ -50,29 +51,36 @@ class _AddEditGuestScreenState extends State<AddEditGuestScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
-    final provider = context.read<GuestProvider>();
-    if (widget.existing == null) {
-      await provider.createGuest(
-        name: _name.text.trim(),
-        mobile: _mobile.text.trim(),
-        email: _email.text.trim().isEmpty ? null : _email.text.trim(),
-        idProofType: _idProofType.text.trim().isEmpty ? null : _idProofType.text.trim(),
-        idProofNumber: _idProofNumber.text.trim().isEmpty ? null : _idProofNumber.text.trim(),
-        address: _address.text.trim().isEmpty ? null : _address.text.trim(),
-      );
-    } else {
-      await provider.updateGuest(
-        widget.existing!.uuid,
-        name: _name.text.trim(),
-        mobile: _mobile.text.trim(),
-        email: _email.text.trim(),
-        idProofType: _idProofType.text.trim(),
-        idProofNumber: _idProofNumber.text.trim(),
-        address: _address.text.trim(),
-      );
-    }
+    try {
+      final repository = GuestRepository(context.read<AppDatabase>());
+      if (widget.existing == null) {
+        await repository.create(
+          name: _name.text.trim(),
+          mobile: _mobile.text.trim(),
+          email: _email.text.trim().isEmpty ? null : _email.text.trim(),
+          idProofType: _idProofType.text.trim().isEmpty ? null : _idProofType.text.trim(),
+          idProofNumber: _idProofNumber.text.trim().isEmpty ? null : _idProofNumber.text.trim(),
+          address: _address.text.trim().isEmpty ? null : _address.text.trim(),
+        );
+      } else {
+        await repository.update(
+          widget.existing!.uuid,
+          name: _name.text.trim(),
+          mobile: _mobile.text.trim(),
+          email: _email.text.trim(),
+          idProofType: _idProofType.text.trim(),
+          idProofNumber: _idProofNumber.text.trim(),
+          address: _address.text.trim(),
+        );
+      }
 
-    if (mounted) Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   @override

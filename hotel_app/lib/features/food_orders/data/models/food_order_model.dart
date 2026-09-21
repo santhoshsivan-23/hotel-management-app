@@ -17,12 +17,18 @@ class FoodOrderItemModel {
 
   double get lineTotal => quantity * price;
 
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
   factory FoodOrderItemModel.fromMap(Map<String, dynamic> map) {
     return FoodOrderItemModel(
       uuid: map['uuid'] as String,
       productName: map['product_name'] as String,
       quantity: map['quantity'] as int,
-      price: (map['price'] as num).toDouble(),
+      price: _toDouble(map['price']),
       modifiers: map['modifiers'] as String?,
       notes: map['notes'] as String?,
     );
@@ -83,7 +89,7 @@ class FoodOrderModel {
       roomNumber: map['room_number'] as String?,
       guestUuid: map['guest_uuid'] as String,
       status: map['status'] as String,
-      totalAmount: (map['total_amount'] as num).toDouble(),
+      totalAmount: FoodOrderItemModel._toDouble(map['total_amount']),
       syncStatus: map['sync_status'] as String? ?? 'PENDING',
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),

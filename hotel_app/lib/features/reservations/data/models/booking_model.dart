@@ -56,31 +56,49 @@ class BookingModel {
   bool get isPending => syncStatus == 'PENDING' || syncStatus == 'FAILED';
   bool get isActive => status == 'CONFIRMED' || status == 'CHECKED_IN';
 
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
+
+  static int _toInt(dynamic value, [int defaultValue = 0]) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
+  }
+
+  static int? _toNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
   factory BookingModel.fromMap(Map<String, dynamic> map) {
     return BookingModel(
-      uuid: map['uuid'] as String,
-      serverId: map['server_id'] as int?,
-      bookingNumber: map['booking_number'] as String?,
-      guestUuid: map['guest_uuid'] as String,
-      guestName: map['guest_name'] as String?,
-      guestMobile: map['guest_mobile'] as String?,
-      roomId: map['room_id'] as int,
-      roomNumber: map['room_number'] as String?,
-      checkIn: DateTime.parse(map['check_in'] as String),
-      checkOut: DateTime.parse(map['check_out'] as String),
-      adults: map['adults'] as int,
-      children: map['children'] as int,
-      roomRate: (map['room_rate'] as num).toDouble(),
-      nights: map['nights'] as int,
-      roomTotal: (map['room_total'] as num).toDouble(),
-      discount: (map['discount'] as num).toDouble(),
-      taxAmount: (map['tax_amount'] as num).toDouble(),
-      grandTotal: (map['grand_total'] as num).toDouble(),
-      advancePaid: (map['advance_paid'] as num).toDouble(),
-      status: map['status'] as String,
-      syncStatus: map['sync_status'] as String? ?? 'PENDING',
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: DateTime.parse(map['updated_at'] as String),
+      uuid: map['uuid']?.toString() ?? '',
+      serverId: _toNullableInt(map['server_id']),
+      bookingNumber: map['booking_number']?.toString(),
+      guestUuid: map['guest_uuid']?.toString() ?? '',
+      guestName: map['guest_name']?.toString(),
+      guestMobile: map['guest_mobile']?.toString(),
+      roomId: _toInt(map['room_id']),
+      roomNumber: map['room_number']?.toString(),
+      checkIn: DateTime.tryParse(map['check_in']?.toString() ?? '') ?? DateTime.now(),
+      checkOut: DateTime.tryParse(map['check_out']?.toString() ?? '') ?? DateTime.now().add(const Duration(days: 1)),
+      adults: _toInt(map['adults'], 1),
+      children: _toInt(map['children'], 0),
+      roomRate: _toDouble(map['room_rate']),
+      nights: _toInt(map['nights'], 1),
+      roomTotal: _toDouble(map['room_total']),
+      discount: _toDouble(map['discount']),
+      taxAmount: _toDouble(map['tax_amount']),
+      grandTotal: _toDouble(map['grand_total']),
+      advancePaid: _toDouble(map['advance_paid']),
+      status: map['status']?.toString() ?? 'CONFIRMED',
+      syncStatus: map['sync_status']?.toString() ?? 'PENDING',
+      createdAt: DateTime.tryParse(map['created_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(map['updated_at']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 

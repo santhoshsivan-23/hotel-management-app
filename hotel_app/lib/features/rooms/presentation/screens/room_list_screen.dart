@@ -117,9 +117,14 @@ class _RoomListView extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AddEditRoomScreen()),
-        ),
+        onPressed: () async {
+          final created = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(builder: (_) => const AddEditRoomScreen()),
+          );
+          if (created == true && context.mounted) {
+            context.read<RoomProvider>().load();
+          }
+        },
         child: const Icon(Icons.add),
       ),
     );

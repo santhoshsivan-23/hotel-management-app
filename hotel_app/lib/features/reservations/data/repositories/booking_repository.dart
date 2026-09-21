@@ -148,7 +148,15 @@ class BookingRepository {
     if (booking != null) await _setRoomStatus(booking.roomId, 'OCCUPIED');
   }
 
-  Future<void> checkout(String uuid) => _dao.updateStatus(uuid, 'CHECKED_OUT');
+  Future<void> checkout(String uuid, {DateTime? actualCheckOut}) async {
+    final updates = <String, dynamic>{'status': 'CHECKED_OUT'};
+    if (actualCheckOut != null) {
+      updates['check_out'] = actualCheckOut.toUtc().toIso8601String();
+    }
+    await _dao.update(uuid, updates);
+  }
+
+  Future<void> reopen(String uuid) => _dao.updateStatus(uuid, 'CHECKED_IN');
 
   Future<void> changeRoom(String uuid, int newRoomId) async {
     final booking = await findByUuid(uuid);

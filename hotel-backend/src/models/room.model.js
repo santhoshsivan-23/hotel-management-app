@@ -125,4 +125,72 @@ async function findAvailable({ checkIn, checkOut, capacity, roomTypeId, excludeB
   return rows;
 }
 
-module.exports = { findAll, findById, findByUuid, create, update, updateStatus, remove, findAvailable };
+async function findAvailabilityStatus({ checkIn, checkOut, capacity, roomTypeId, excludeBookingId }) {
+  const params = [];
+  let candidateSql = `
+    SELECT r.*, rt.name AS room_type_name
+    FROM rooms r
+    JOIN room_types rt ON rt.id = r.room_type_id
+    WHERE 1 = 1
+  `;
+  if (capacity) {
+    candidateSql += " AND r.capacity >= ?";
+    params.push(capacity);
+  }
+  if (roomTypeId) {
+    candidateSql += " AND r.room_type_id = ?";
+    params.push(roomTypeId);
+  }
+  candidateSql += " ORDER BY r.price ASC";
+  const [candidateRooms] = await pool.query(candidateSql, params);
+
+  const overlapParams = [checkOut, checkIn];
+  let overlapSql = `
+    SELECT b.room_id, b.check_in, b.check_out, b.booking_number
+    FROM bookings b
+    WHERE b.status IN ('PENDING', 'CONFIRMED', 'CHECKED_IN')
+      AND b.check_in < ?
+      AND b.check_out > ?
+  `;
+  if (excludeBookingId) {
+    overlapSql += " AND b.id != ?";
+    overlapParams.push(excludeBookingId);
+  }
+  const [overlapRows] = await pool.query(overlapSql, overlapParams);
+  const overlapMap = new Map();
+  for (const row of overlapRows) {
+    if (!overlapMap.has(row.room_id)) {
+      overlapMap.set(row.room_id, []);
+    }
+    overlapMap.get(row.room_id).push({
+      check_in: row.check_in,
+      check_out: row.check_out,
+      booking_number: row.booking_number,
+    });
+  }
+
+  const available = [];
+  const unavailable = [];
+
+  for (const room of candidateRooms) {
+    if (room.status === "MAINTENANCE" || room.status === "OUT_OF_SERVICE") {
+      unavailable.push({
+        ...room,
+        reason: room.status,
+        conflicts: [],
+      });
+    } else if (overlapMap.has(room.id)) {
+      unavailable.push({
+        ...room,
+        reason: "BOOKED",
+        conflicts: overlapMap.get(room.id),
+      });
+    } else {
+      available.push(room);
+    }
+  }
+
+  return { available, unavailable };
+}
+
+module.exports = { findAll, findById, findByUuid, create, update, updateStatus, remove, findAvailable, findAvailabilityStatus };

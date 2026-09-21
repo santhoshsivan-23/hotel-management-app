@@ -109,6 +109,9 @@ const push = asyncHandler(async (req, res) => {
           await conn.query("UPDATE rooms SET status = 'AVAILABLE' WHERE id = ?", [r.room_id]);
         } else if (newStatus === "CHECKED_OUT") {
           await conn.query("UPDATE rooms SET status = 'DIRTY' WHERE id = ?", [r.room_id]);
+          if (r.check_out && new Date(r.check_out) > new Date()) {
+            await conn.query("UPDATE bookings SET check_out = NOW(), updated_at = NOW() WHERE id = ?", [result.id]);
+          }
           // Invoice generation reads through the shared pool (a separate
           // connection), so it must happen AFTER this transaction commits -
           // otherwise it would run against a connection that can't yet see

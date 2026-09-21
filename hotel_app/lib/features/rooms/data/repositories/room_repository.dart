@@ -72,6 +72,60 @@ class RoomRepository {
     }
   }
 
+  Future<({List<RoomModel> available, List<RoomModel> unavailable})> getAvailabilityStatus({
+    required DateTime checkIn,
+    required DateTime checkOut,
+    int? capacity,
+    int? roomTypeId,
+  }) async {
+    // 1. Try to fetch available and unavailable rooms from backend when online
+    try {
+      final checkInDate = checkIn.toIso8601String().split('T').first;
+      final checkOutDate = checkOut.toIso8601String().split('T').first;
+      final response = await _apiClient.dio.get(
+        ApiEndpoints.roomsAvailable,
+        queryParameters: {
+          'check_in': checkInDate,
+          'check_out': checkOutDate,
+          'include_unavailable': 'true',
+          if (capacity != null) 'capacity': capacity,
+          if (roomTypeId != null) 'room_type_id': roomTypeId,
+        },
+      );
+      final data = response.data as Map<String, dynamic>;
+      final available = (data['available'] as List)
+          .map((m) => RoomModel.fromMap(Map<String, dynamic>.from(m as Map)))
+          .toList();
+      final unavailable = (data['unavailable'] as List)
+          .map((m) => RoomModel.fromMap(Map<String, dynamic>.from(m as Map)))
+          .toList();
+
+      if (available.isNotEmpty) {
+        await _database.upsertReferenceRows(
+          RoomsTable.tableName,
+          available.map((r) => r.toCacheMap()).toList(),
+          allowedColumns: RoomsTable.columns,
+        );
+      }
+      return (available: available, unavailable: unavailable);
+    } catch (_) {
+      // 2. Fall back to local SQLite cache
+      try {
+        final result = await _dao.findAvailabilityStatus(
+          checkInIso: checkIn.toUtc().toIso8601String(),
+          checkOutIso: checkOut.toUtc().toIso8601String(),
+          capacity: capacity,
+          roomTypeId: roomTypeId,
+        );
+        final available = (result['available'] ?? []).map(RoomModel.fromMap).toList();
+        final unavailable = (result['unavailable'] ?? []).map(RoomModel.fromMap).toList();
+        return (available: available, unavailable: unavailable);
+      } catch (_) {
+        return (available: <RoomModel>[], unavailable: <RoomModel>[]);
+      }
+    }
+  }
+
   /// Throws DioException if offline/failed - callers should surface a
   /// clear "connect to add a room" message, matching the settings screens.
   Future<void> create({

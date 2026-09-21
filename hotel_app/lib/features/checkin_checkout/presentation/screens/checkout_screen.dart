@@ -69,13 +69,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _completeCheckout() async {
+    final db = context.read<AppDatabase>();
     setState(() => _processing = true);
     await _collectBalanceIfAny();
-    await _bookingRepository.checkout(widget.bookingUuid);
+
+    final now = DateTime.now();
+    final isEarly = _booking != null && now.isBefore(_booking!.checkOut);
+    await _bookingRepository.checkout(
+      widget.bookingUuid,
+      actualCheckOut: isEarly ? now : null,
+    );
 
     // Room -> DIRTY, and a housekeeping task is queued, mirroring the
     // backend's synchronous OCCUPIED -> DIRTY -> housekeeping_tasks flow.
-    final db = context.read<AppDatabase>();
     await db.database.then((d) => d.update(
           'rooms',
           {'status': 'DIRTY'},

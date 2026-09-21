@@ -1,11 +1,15 @@
 import '../../../../core/db/app_database.dart';
+import '../../../../core/db/daos/booking_dao.dart';
 import '../../../../core/db/daos/food_order_dao.dart';
 import '../../../../core/utils/uuid_generator.dart';
 import '../models/food_order_model.dart';
 
 class FoodOrderRepository {
-  FoodOrderRepository(AppDatabase database) : _dao = FoodOrderDao(database);
+  FoodOrderRepository(AppDatabase database)
+      : _dao = FoodOrderDao(database),
+        _database = database;
   final FoodOrderDao _dao;
+  final AppDatabase _database;
 
   Future<List<FoodOrderModel>> findAll({String? status, String? bookingUuid}) async {
     final rows = await _dao.findAll(status: status, bookingUuid: bookingUuid);
@@ -26,6 +30,11 @@ class FoodOrderRepository {
     required List<FoodOrderItemModel> items,
     String? deviceId,
   }) async {
+    final bookingRow = await BookingDao(_database).findByUuid(bookingUuid);
+    if (bookingRow != null && bookingRow['status'] == 'CHECKED_OUT') {
+      throw StateError('Cannot add food orders to a checked-out stay');
+    }
+
     final now = DateTime.now().toUtc();
     final totalAmount = items.fold<double>(0, (sum, i) => sum + i.lineTotal);
     final orderUuid = UuidGenerator.generate();

@@ -68,6 +68,18 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
     }
   }
 
+  Future<void> _reopen() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Reopen Stay for Adjustments',
+      message: 'Reopen this stay? This will allow adding post-stay adjustments and charges.',
+    );
+    if (confirmed) {
+      await _repository.reopen(widget.bookingUuid);
+      await _load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Scaffold(body: LoadingIndicator());
@@ -76,6 +88,9 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
       return const Scaffold(body: Center(child: Text('Booking not found')));
     }
     final bill = _bill!;
+    final isCheckedOut = booking.status == 'CHECKED_OUT';
+    final isCancelled = booking.status == 'CANCELLED';
+    final canAddTransactions = !isCheckedOut && !isCancelled;
 
     return Scaffold(
       appBar: AppBar(
@@ -100,6 +115,29 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
                 Text('Room ${booking.roomNumber ?? booking.roomId}', style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
             ),
+            if (isCheckedOut) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  border: Border.all(color: Colors.amber.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_outline, size: 20, color: Colors.amber.shade900),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Stay is Closed / Checked Out. Additional transactions are disabled.',
+                        style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             _sectionTitle('Guest Information'),
             _infoRow('Name', booking.guestName ?? '-'),
@@ -143,40 +181,46 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
                 OutlinedButton.icon(
                   icon: const Icon(Icons.restaurant),
                   label: const Text('Add Food Order'),
-                  onPressed: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => NewOrderScreen(
-                        bookingUuid: booking.uuid,
-                        roomId: booking.roomId,
-                        guestUuid: booking.guestUuid,
-                      ),
-                    ));
-                    _load();
-                  },
+                  onPressed: !canAddTransactions
+                      ? null
+                      : () async {
+                          await Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => NewOrderScreen(
+                              bookingUuid: booking.uuid,
+                              roomId: booking.roomId,
+                              guestUuid: booking.guestUuid,
+                            ),
+                          ));
+                          _load();
+                        },
                 ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.room_service),
                   label: const Text('Add Service'),
-                  onPressed: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => NewServiceRequestScreen(
-                        bookingUuid: booking.uuid,
-                        roomId: booking.roomId,
-                        guestUuid: booking.guestUuid,
-                      ),
-                    ));
-                    _load();
-                  },
+                  onPressed: !canAddTransactions
+                      ? null
+                      : () async {
+                          await Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => NewServiceRequestScreen(
+                              bookingUuid: booking.uuid,
+                              roomId: booking.roomId,
+                              guestUuid: booking.guestUuid,
+                            ),
+                          ));
+                          _load();
+                        },
                 ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.payments),
                   label: const Text('Add Payment'),
-                  onPressed: () async {
-                    await Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => TakePaymentScreen(bookingUuid: booking.uuid, suggestedAmount: bill['balance']),
-                    ));
-                    _load();
-                  },
+                  onPressed: !canAddTransactions
+                      ? null
+                      : () async {
+                          await Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => TakePaymentScreen(bookingUuid: booking.uuid, suggestedAmount: bill['balance']),
+                          ));
+                          _load();
+                        },
                 ),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.receipt_long_outlined),
@@ -185,6 +229,12 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
                     MaterialPageRoute(builder: (_) => InvoiceScreen(bookingUuid: booking.uuid)),
                   ),
                 ),
+                if (isCheckedOut)
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.lock_open),
+                    label: const Text('Reopen Stay for Adjustments'),
+                    onPressed: _reopen,
+                  ),
                 if (booking.status == 'PENDING' || booking.status == 'CONFIRMED')
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),

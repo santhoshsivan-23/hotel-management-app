@@ -1,11 +1,15 @@
 import '../../../../core/db/app_database.dart';
+import '../../../../core/db/daos/booking_dao.dart';
 import '../../../../core/db/daos/payment_dao.dart';
 import '../../../../core/utils/uuid_generator.dart';
 import '../models/payment_model.dart';
 
 class PaymentRepository {
-  PaymentRepository(AppDatabase database) : _dao = PaymentDao(database);
+  PaymentRepository(AppDatabase database)
+      : _dao = PaymentDao(database),
+        _database = database;
   final PaymentDao _dao;
+  final AppDatabase _database;
 
   Future<List<PaymentModel>> findByBooking(String bookingUuid) async {
     final rows = await _dao.findByBooking(bookingUuid);
@@ -19,6 +23,11 @@ class PaymentRepository {
     String? referenceNo,
     String? deviceId,
   }) async {
+    final bookingRow = await BookingDao(_database).findByUuid(bookingUuid);
+    if (bookingRow != null && bookingRow['status'] == 'CHECKED_OUT') {
+      throw StateError('Cannot add payments to a checked-out stay');
+    }
+
     final now = DateTime.now().toUtc();
     final payment = PaymentModel(
       uuid: UuidGenerator.generate(),

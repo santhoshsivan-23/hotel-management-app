@@ -15,6 +15,7 @@ router.patch("/:id/status", validate(updateStatus), controller.updateStatus);
 router.post("/:id/cancel", controller.cancel);
 router.post("/:id/checkin", controller.checkin);
 router.post("/:id/checkout", controller.checkout);
+router.post("/:id/reopen", controller.reopen);
 router.post("/:id/change-room", validate(changeRoom), controller.changeRoom);
 router.post("/:id/extend", validate(extendStay), controller.extendStay);
 

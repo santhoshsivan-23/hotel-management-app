@@ -1,11 +1,15 @@
 import '../../../../core/db/app_database.dart';
+import '../../../../core/db/daos/booking_dao.dart';
 import '../../../../core/db/daos/service_request_dao.dart';
 import '../../../../core/utils/uuid_generator.dart';
 import '../models/service_request_model.dart';
 
 class ServiceRequestRepository {
-  ServiceRequestRepository(AppDatabase database) : _dao = ServiceRequestDao(database);
+  ServiceRequestRepository(AppDatabase database)
+      : _dao = ServiceRequestDao(database),
+        _database = database;
   final ServiceRequestDao _dao;
+  final AppDatabase _database;
 
   Future<List<ServiceRequestModel>> findAll({String? status, String? bookingUuid}) async {
     final rows = await _dao.findAll(status: status, bookingUuid: bookingUuid);
@@ -22,6 +26,11 @@ class ServiceRequestRepository {
     String? notes,
     String? deviceId,
   }) async {
+    final bookingRow = await BookingDao(_database).findByUuid(bookingUuid);
+    if (bookingRow != null && bookingRow['status'] == 'CHECKED_OUT') {
+      throw StateError('Cannot add service requests to a checked-out stay');
+    }
+
     final now = DateTime.now().toUtc();
     final request = ServiceRequestModel(
       uuid: UuidGenerator.generate(),

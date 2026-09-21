@@ -3,8 +3,26 @@ const pool = require("../config/db");
 async function bookingReport({ fromDate, toDate } = {}) {
   const params = [];
   let sql = `
-    SELECT b.booking_number, g.name AS guest, r.room_number, b.check_in, b.check_out,
-           b.grand_total AS amount, b.status
+    SELECT 
+      b.booking_number,
+      g.name AS guest,
+      r.room_number,
+      b.check_in,
+      b.check_out,
+      b.room_total AS room_amount,
+      COALESCE((SELECT SUM(fo.total_amount) FROM food_orders fo WHERE fo.booking_id = b.id AND fo.status != 'CANCELLED'), 0) AS food_amount,
+      COALESCE((SELECT SUM(sr.amount) FROM service_requests sr WHERE sr.booking_id = b.id AND sr.status != 'CANCELLED'), 0) AS service_amount,
+      0 AS other_charges,
+      b.discount,
+      b.tax_amount AS tax,
+      COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.booking_id = b.id), 0) AS payment_amount,
+      (b.room_total 
+        + COALESCE((SELECT SUM(fo.total_amount) FROM food_orders fo WHERE fo.booking_id = b.id AND fo.status != 'CANCELLED'), 0)
+        + COALESCE((SELECT SUM(sr.amount) FROM service_requests sr WHERE sr.booking_id = b.id AND sr.status != 'CANCELLED'), 0)
+        - b.discount 
+        + b.tax_amount) AS total_amount_spent,
+      b.grand_total AS amount,
+      b.status
     FROM bookings b
     JOIN guests g ON g.id = b.guest_id
     JOIN rooms r ON r.id = b.room_id

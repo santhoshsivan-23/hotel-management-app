@@ -28,7 +28,16 @@ const push = asyncHandler(async (req, res) => {
     const result = await upsertByUuid(conn, "housekeeping_tasks", r.uuid, insertValues, updateValues);
 
     if (r.status === "AVAILABLE") {
-      await conn.query("UPDATE rooms SET status = 'AVAILABLE' WHERE id = ?", [r.room_id]);
+      const [upcoming] = await conn.query(
+        `SELECT id FROM bookings 
+         WHERE room_id = ? 
+           AND status IN ('CONFIRMED', 'PENDING') 
+           AND check_out > NOW() 
+         LIMIT 1`,
+        [r.room_id]
+      );
+      const newRoomStatus = upcoming.length > 0 ? "RESERVED" : "AVAILABLE";
+      await conn.query("UPDATE rooms SET status = ? WHERE id = ?", [newRoomStatus, r.room_id]);
     } else if (r.status === "CLEANING") {
       await conn.query("UPDATE rooms SET status = 'CLEANING' WHERE id = ?", [r.room_id]);
     }

@@ -9,8 +9,11 @@ const push = asyncHandler(async (req, res) => {
   const { records, device_id } = req.body;
 
   const results = await processBatch(pool, records, async (conn, r) => {
-    const [[booking]] = await conn.query("SELECT id FROM bookings WHERE uuid = ? LIMIT 1", [r.booking_uuid]);
+    const [[booking]] = await conn.query("SELECT id, status FROM bookings WHERE uuid = ? LIMIT 1", [r.booking_uuid]);
     if (!booking) throw new Error(`Booking with uuid ${r.booking_uuid} not found`);
+    if (booking.status === "CHECKED_OUT") {
+      throw new Error(`Cannot add payments to checked-out booking ${r.booking_uuid}`);
+    }
 
     const insertValues = {
       uuid: r.uuid,

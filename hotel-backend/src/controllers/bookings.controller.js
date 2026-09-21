@@ -144,11 +144,30 @@ const checkout = asyncHandler(async (req, res) => {
     });
   }
 
+  // If early checkout, record actual departure time so room is immediately free
+  if (new Date(booking.check_out) > new Date()) {
+    await pool.query("UPDATE bookings SET check_out = NOW(), updated_at = NOW() WHERE id = ?", [booking.id]);
+  }
+
   await bookingModel.updateStatus(booking.id, "CHECKED_OUT");
   await roomModel.updateStatus(booking.room_id, "DIRTY");
   await housekeepingModel.createForRoom(booking.room_id);
 
   res.json({ message: "Checked out", invoice: invoiceResult });
+});
+
+// POST /api/bookings/:id/reopen
+const reopen = asyncHandler(async (req, res) => {
+  const booking = await bookingModel.findById(req.params.id);
+  if (!booking) return res.status(404).json({ message: "Booking not found" });
+  if (booking.status !== "CHECKED_OUT") {
+    return res.status(409).json({
+      message: `Can only reopen a booking with status CHECKED_OUT (current: ${booking.status})`,
+    });
+  }
+
+  await bookingModel.updateStatus(booking.id, "CHECKED_IN");
+  res.json({ message: "Booking reopened for adjustments", booking: await bookingModel.findById(booking.id) });
 });
 
 // POST /api/bookings/:id/change-room
@@ -212,5 +231,5 @@ const runningBill = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  list, getById, create, updateStatus, cancel, checkin, checkout, changeRoom, extendStay, runningBill,
+  list, getById, create, updateStatus, cancel, checkin, checkout, reopen, changeRoom, extendStay, runningBill,
 };

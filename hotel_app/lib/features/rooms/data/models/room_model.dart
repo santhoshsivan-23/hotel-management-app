@@ -12,6 +12,8 @@ class RoomModel {
     required this.capacity,
     required this.price,
     required this.status,
+    this.unavailableReason,
+    this.conflicts = const [],
   });
 
   final int id;
@@ -23,6 +25,8 @@ class RoomModel {
   final int capacity;
   final double price;
   final String status;
+  final String? unavailableReason;
+  final List<Map<String, dynamic>> conflicts;
 
   static double _toDouble(dynamic value) {
     if (value == null) return 0.0;
@@ -47,6 +51,8 @@ class RoomModel {
       capacity: _toInt(map['capacity'], 1),
       price: _toDouble(map['price']),
       status: map['status']?.toString() ?? 'AVAILABLE',
+      unavailableReason: map['reason']?.toString(),
+      conflicts: map['conflicts'] != null ? List<Map<String, dynamic>>.from(map['conflicts'] as List) : const [],
     );
   }
 

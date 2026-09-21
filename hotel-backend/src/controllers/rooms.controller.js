@@ -34,12 +34,23 @@ const remove = asyncHandler(async (req, res) => {
   res.status(204).send();
 });
 
-// GET /api/rooms/available?check_in=...&check_out=...&capacity=...&room_type_id=...
+// GET /api/rooms/available?check_in=...&check_out=...&capacity=...&room_type_id=...&include_unavailable=...
 const available = asyncHandler(async (req, res) => {
-  const { check_in, check_out, capacity, room_type_id } = req.query;
+  const { check_in, check_out, capacity, room_type_id, include_unavailable } = req.query;
   if (!check_in || !check_out) {
     return res.status(400).json({ message: "check_in and check_out are required" });
   }
+
+  if (include_unavailable === "true" || include_unavailable === true) {
+    const result = await roomModel.findAvailabilityStatus({
+      checkIn: check_in,
+      checkOut: check_out,
+      capacity: capacity ? Number(capacity) : undefined,
+      roomTypeId: room_type_id ? Number(room_type_id) : undefined,
+    });
+    return res.json(result);
+  }
+
   const rooms = await roomModel.findAvailable({
     checkIn: check_in,
     checkOut: check_out,

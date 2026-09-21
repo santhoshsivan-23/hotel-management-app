@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/config/api_endpoints.dart';
 import '../../../../core/db/app_database.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/validators.dart';
 import '../../data/repositories/room_repository.dart';
 
@@ -38,7 +39,11 @@ class _AddEditRoomScreenState extends State<AddEditRoomScreen> {
       final response = await context.read<ApiClient>().dio.get(ApiEndpoints.roomTypes);
       setState(() {
         _roomTypes = List<Map<String, dynamic>>.from(response.data as List);
-        _selectedRoomTypeId = _roomTypes.isNotEmpty ? _roomTypes.first['id'] as int : null;
+        if (_roomTypes.isNotEmpty) {
+          final first = _roomTypes.first;
+          _selectedRoomTypeId = first['id'] as int;
+          _applyRoomTypeDefaults(first);
+        }
         _loadingTypes = false;
       });
     } catch (_) {
@@ -46,6 +51,20 @@ class _AddEditRoomScreenState extends State<AddEditRoomScreen> {
         _error = 'Connect to the internet to load room types';
         _loadingTypes = false;
       });
+    }
+  }
+
+  void _applyRoomTypeDefaults(Map<String, dynamic> roomType) {
+    if (roomType['default_price'] != null) {
+      final priceNum = roomType['default_price'];
+      if (priceNum is num) {
+        _price.text = priceNum % 1 == 0 ? priceNum.toInt().toString() : priceNum.toString();
+      } else {
+        _price.text = priceNum.toString();
+      }
+    }
+    if (roomType['default_capacity'] != null) {
+      _capacity.text = roomType['default_capacity'].toString();
     }
   }
 
@@ -111,10 +130,23 @@ class _AddEditRoomScreenState extends State<AddEditRoomScreen> {
                     DropdownButtonFormField<int>(
                       value: _selectedRoomTypeId,
                       decoration: const InputDecoration(labelText: 'Room Type'),
-                      items: _roomTypes
-                          .map((rt) => DropdownMenuItem(value: rt['id'] as int, child: Text(rt['name'] as String)))
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedRoomTypeId = v),
+                      items: _roomTypes.map((rt) {
+                        final price = rt['default_price'] as num?;
+                        final priceStr = price != null ? ' (Default: ${CurrencyFormatter.format(price)})' : '';
+                        return DropdownMenuItem(
+                          value: rt['id'] as int,
+                          child: Text('${rt['name']}$priceStr'),
+                        );
+                      }).toList(),
+                      onChanged: (v) {
+                        setState(() {
+                          _selectedRoomTypeId = v;
+                          final selected = _roomTypes.firstWhere((rt) => rt['id'] == v, orElse: () => {});
+                          if (selected.isNotEmpty) {
+                            _applyRoomTypeDefaults(selected);
+                          }
+                        });
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -132,7 +164,10 @@ class _AddEditRoomScreenState extends State<AddEditRoomScreen> {
                     TextFormField(
                       controller: _price,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Price per night'),
+                      decoration: const InputDecoration(
+                        labelText: 'Price per night',
+                        helperText: 'Defaults to Room Type price. You can edit this for custom pricing.',
+                      ),
                       validator: (v) => Validators.positiveNumber(v, field: 'Price'),
                     ),
                     const SizedBox(height: 20),
